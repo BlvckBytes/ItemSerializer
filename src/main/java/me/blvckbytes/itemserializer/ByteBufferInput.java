@@ -1,8 +1,8 @@
-package me.blvckbytes.itemserializer.nbt;
+package me.blvckbytes.itemserializer;
 
 import java.nio.charset.StandardCharsets;
 
-public class ByteInput {
+public class ByteBufferInput {
 
   private final byte[] buf;
   private int pos;
@@ -11,7 +11,7 @@ public class ByteInput {
    * Create a new byte input based on an underlying byte buffer
    * @param buf Byte buffer to incrementally read
    */
-  public ByteInput(byte[] buf) {
+  public ByteBufferInput(byte[] buf) {
     this.buf = buf;
   }
 

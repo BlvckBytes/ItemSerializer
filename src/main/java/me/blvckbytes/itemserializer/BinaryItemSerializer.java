@@ -1,28 +1,127 @@
-package me.blvckbytes.itemserializer.nbt;
+package me.blvckbytes.itemserializer;
 
-import me.blvckbytes.bbreflection.ReflectionHelper;
+import com.cryptomorin.xseries.XMaterial;
+import com.google.gson.JsonPrimitive;
+import me.blvckbytes.bbreflection.*;
+import org.bukkit.Material;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
+public class BinaryItemSerializer {
 
-  public BinaryNBTSerializer(ReflectionHelper rh) throws Exception {
-    super(rh);
+  protected final ClassHandle
+    C_NBT_TAG_COMPOUND,
+    C_NBT_TAG_STRING,
+    C_NBT_NUMBER,
+    C_NBT_LIST,
+    C_NBT_TAG_INT,
+    C_NBT_TAG_LONG,
+    C_NBT_TAG_BYTE;
+
+  protected final MethodHandle
+    M_NBT_LIST__GET,
+    M_NBT_LIST__SIZE,
+    M_NBT_NUMBER__GET,
+    M_NBT_BASE__TYPE,
+    M_CIS__AS_CRAFT_COPY;
+
+  protected final ConstructorHandle
+    CT_NBT_TAG_STRING,
+    CT_NBT_TAG_INT,
+    CT_NBT_TAG_FLOAT,
+    CT_NBT_TAG_LONG,
+    CT_NBT_TAG_DOUBLE,
+    CT_NBT_TAG_BYTE,
+    CT_NBT_TAG_SHORT,
+    CT_NBT_TAG_LIST,
+    CT_NBT_TAG_COMPOUND,
+    CT_NBT_TAG_INT_ARRAY,
+    CT_NBT_TAG_BYTE_ARRAY,
+    CT_NBT_TAG_LONG_ARRAY;
+
+  protected final FieldHandle
+    F_NBT_COMPOUND__VALUE,
+    F_NBT_TAG_STRING__VALUE,
+    F_NBT_TAG_LIST__VALUE,
+    F_NBT_TAG_LIST__TYPE,
+    F_NIS__TAG,
+    F_CIS__HANDLE;
+
+  protected final Field F_JSON_PRIMITIVE__VALUE;
+
+  public BinaryItemSerializer(ReflectionHelper rh) throws Exception {
+    ClassHandle C_NBT_TAG_DOUBLE = rh.getClass(RClass.NBT_TAG_DOUBLE);
+    ClassHandle C_NBT_TAG_FLOAT = rh.getClass(RClass.NBT_TAG_FLOAT);
+    ClassHandle C_NBT_TAG_SHORT = rh.getClass(RClass.NBT_TAG_SHORT);
+    ClassHandle C_NBT_TAG_LIST = rh.getClass(RClass.NBT_TAG_LIST);
+    ClassHandle C_NBT_BASE = rh.getClass(RClass.NBT_BASE);
+    ClassHandle C_NMS_ITEM_STACK = rh.getClass(RClass.ITEM_STACK);
+    ClassHandle C_CRAFT_ITEM_STACK = rh.getClass(RClass.CRAFT_ITEM_STACK);
+    ClassHandle c_NBT_TAG_COMPOUND = rh.getClass(RClass.NBT_TAG_COMPOUND);
+
+    C_NBT_TAG_COMPOUND = rh.getClass(RClass.NBT_TAG_COMPOUND);
+    C_NBT_TAG_STRING = rh.getClass(RClass.NBT_TAG_STRING);
+    C_NBT_LIST = rh.getClass(RClass.NBT_LIST);
+    C_NBT_NUMBER = rh.getClass(RClass.NBT_NUMBER);
+    C_NBT_TAG_INT = rh.getClass(RClass.NBT_TAG_INT);
+    C_NBT_TAG_LONG = rh.getClass(RClass.NBT_TAG_LONG);
+    C_NBT_TAG_BYTE = rh.getClass(RClass.NBT_TAG_BYTE);
+
+    F_NBT_COMPOUND__VALUE = C_NBT_TAG_COMPOUND.locateField().withType(Map.class).withGeneric(String.class).required();
+    F_NBT_TAG_STRING__VALUE = C_NBT_TAG_STRING.locateField().withType(String.class).required();
+    F_NBT_TAG_LIST__VALUE = C_NBT_TAG_LIST.locateField().withType(List.class).required();
+    F_NBT_TAG_LIST__TYPE = C_NBT_TAG_LIST.locateField().withType(byte.class).required();
+    F_JSON_PRIMITIVE__VALUE = JsonPrimitive.class.getDeclaredField("value");
+    F_JSON_PRIMITIVE__VALUE.setAccessible(true);
+    F_NIS__TAG = C_NMS_ITEM_STACK.locateField().withType(c_NBT_TAG_COMPOUND).required();
+    F_CIS__HANDLE = C_CRAFT_ITEM_STACK.locateField().withType(C_NMS_ITEM_STACK).required();
+
+    M_NBT_NUMBER__GET = C_NBT_NUMBER.locateMethod().withAbstract(true).withReturnType(Number.class).required();
+    M_NBT_LIST__GET = C_NBT_LIST.locateMethod().withAbstract(true).withParameters(int.class).withReturnType(Object.class, false, Assignability.TYPE_TO_TARGET).required();
+    M_NBT_LIST__SIZE = C_NBT_LIST.locateMethod().withAbstract(true).withReturnType(int.class).required();
+    M_NBT_BASE__TYPE = C_NBT_BASE.locateMethod().withAbstract(true).withReturnType(byte.class).required();
+    M_CIS__AS_CRAFT_COPY = C_CRAFT_ITEM_STACK.locateMethod().withName("asCraftCopy").withStatic(true).required();
+
+    CT_NBT_TAG_STRING = C_NBT_TAG_STRING.locateConstructor().withParameters(String.class).required();
+    CT_NBT_TAG_INT = C_NBT_TAG_INT.locateConstructor().withParameter(Integer.class, true, Assignability.NONE).required();
+    CT_NBT_TAG_FLOAT = C_NBT_TAG_FLOAT.locateConstructor().withParameter(Float.class, true, Assignability.NONE).required();
+    CT_NBT_TAG_LONG = C_NBT_TAG_LONG.locateConstructor().withParameter(Long.class, true, Assignability.NONE).required();
+    CT_NBT_TAG_DOUBLE = C_NBT_TAG_DOUBLE.locateConstructor().withParameter(Double.class, true, Assignability.NONE).required();
+    CT_NBT_TAG_BYTE = C_NBT_TAG_BYTE.locateConstructor().withParameter(Byte.class, true, Assignability.NONE).required();
+    CT_NBT_TAG_SHORT = C_NBT_TAG_SHORT.locateConstructor().withParameter(Short.class, true, Assignability.NONE).required();
+    CT_NBT_TAG_LIST = C_NBT_TAG_LIST.locateConstructor().required();
+    CT_NBT_TAG_COMPOUND = C_NBT_TAG_COMPOUND.locateConstructor().required();
+    CT_NBT_TAG_INT_ARRAY = rh.getClass(RClass.NBT_TAG_INT_ARRAY).locateConstructor().withParameters(int[].class).required();
+    CT_NBT_TAG_BYTE_ARRAY = rh.getClass(RClass.NBT_TAG_BYTE_ARRAY).locateConstructor().withParameters(byte[].class).required();
+    CT_NBT_TAG_LONG_ARRAY = rh.getClass(RClass.NBT_TAG_LONG_ARRAY).locateConstructor().withParameters(long[].class).required();
   }
 
-  @Override
-  public byte[] serialize(Object tag) throws Exception {
-    ByteArrayOutputStream os = new ByteArrayOutputStream();
+  public void serialize(ItemStack item, ByteArrayOutputStream os) throws Exception {
+    Object handle = F_CIS__HANDLE.get(item);
+    Object tag = F_NIS__TAG.get(handle);
+
+    serializeString(XMaterial.matchXMaterial(item).name(), false, os);
+    serializeInt(item.getAmount(), os);
     serializeSub(tag, os);
-    return os.toByteArray();
   }
 
-  @Override
-  public Object deserialize(byte[] data) throws Exception {
-    return deserializeSub(new ByteInput(data));
+  public ItemStack deserialize(ByteBufferInput input) throws Exception {
+    XMaterial material = XMaterial.valueOf(deserializeString(input));
+    ItemStack item = new ItemStack(Material.BARRIER, deserializeInt(input));
+    material.setType(item);
+
+    Object tag = deserializeSub(input);
+
+    Object bukkitItem = M_CIS__AS_CRAFT_COPY.invoke(null, item);
+    Object handle = F_CIS__HANDLE.get(bukkitItem);
+    F_NIS__TAG.set(handle, tag);
+
+    return (ItemStack) bukkitItem;
   }
 
   //=========================================================================//
@@ -34,7 +133,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @param input Byte input to deserialize from
    * @return Deserialized object
    */
-  private Object deserializeSub(ByteInput input) throws Exception {
+  private Object deserializeSub(ByteBufferInput input) throws Exception {
     byte marker = input.read();
 
     if (marker == TypeMarker.BYTE.getCorrespondingByte())
@@ -72,7 +171,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @param input Input to serialize from
    * @return Short value
    */
-  private short deserializeShort(ByteInput input) {
+  private short deserializeShort(ByteBufferInput input) {
     int numBytes = Short.SIZE / 8;
     short result = 0;
 
@@ -87,7 +186,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @param input Input to serialize from
    * @return Long value
    */
-  private long deserializeLong(ByteInput input) {
+  private long deserializeLong(ByteBufferInput input) {
     int numBytes = Long.SIZE / 8;
     long result = 0;
 
@@ -102,7 +201,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @param input Input to serialize from
    * @return Integer value
    */
-  private int deserializeInt(ByteInput input) {
+  private int deserializeInt(ByteBufferInput input) {
     int numBytes = Integer.SIZE / 8;
     int result = 0;
 
@@ -117,7 +216,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @param input Input to serialize from
    * @return String value
    */
-  private String deserializeString(ByteInput input) {
+  private String deserializeString(ByteBufferInput input) {
     int length = deserializeInt(input);
     return input.readString(length);
   }
@@ -129,7 +228,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @return List containing read tags
    */
   @SuppressWarnings("unchecked")
-  private Object deserializeList(ByteInput input) throws Exception {
+  private Object deserializeList(ByteBufferInput input) throws Exception {
     Object tag = CT_NBT_TAG_LIST.newInstance();
     List<Object> list = (List<Object>) F_NBT_TAG_LIST__VALUE.get(tag);
     int size = deserializeInt(input);
@@ -150,7 +249,7 @@ public class BinaryNBTSerializer extends ANBTSerializer<byte[]> {
    * @return Map containing read tag-pairs
    */
   @SuppressWarnings("unchecked")
-  private Object deserializeCompound(ByteInput input) throws Exception {
+  private Object deserializeCompound(ByteBufferInput input) throws Exception {
     Object tag = CT_NBT_TAG_COMPOUND.newInstance();
     Map<Object, Object> map = (Map<Object, Object>) F_NBT_COMPOUND__VALUE.get(tag);
     int size = deserializeInt(input);

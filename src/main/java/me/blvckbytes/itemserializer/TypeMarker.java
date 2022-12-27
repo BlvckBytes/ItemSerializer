@@ -1,4 +1,4 @@
-package me.blvckbytes.itemserializer.nbt;
+package me.blvckbytes.itemserializer;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

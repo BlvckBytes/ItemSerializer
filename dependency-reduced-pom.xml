@@ -27,6 +27,7 @@
           <artifactSet>
             <includes>
               <include>me.blvckbytes:BBReflection</include>
+              <include>com.github.cryptomorin:XSeries</include>
             </includes>
           </artifactSet>
           <relocations>
